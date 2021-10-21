@@ -15,12 +15,12 @@
 # along with gzip_static.  If not, see <https://www.gnu.org/licenses/
 
 """Functions to compress a website's static files."""
-
+import argparse
 import gzip
 import hashlib
 import os
 from pathlib import Path
-from typing import Generator, Set
+from typing import Generator, Set, Tuple
 
 # Reading larger chunks of files makes it faster.
 DEFAULT_BLOCK_SIZE = 32 * 1024
@@ -29,21 +29,21 @@ DEFAULT_HASH_ALGORITHM = hashlib.sha1
 DEFAULT_COMPRESSION_LEVEL=9
 
 # Precompress ending states
-COMPRESSED = 1
-RECOMPRESSED = 2
-SKIPPED = 3
+COMPRESSED = 0
+RECOMPRESSED = 1
+SKIPPED = 2
 
 DEFAULT_EXTENSIONS_FILE = Path(__file__).parent / "extensions.txt"
 
 
 def hash_file_contents(filepath: os.PathLike,
-                       algorithm=DEFAULT_HASH_ALGORITHM,
+                       hash_algorithm=DEFAULT_HASH_ALGORITHM,
                        block_size:int = DEFAULT_BLOCK_SIZE):
     if os.fspath(filepath).endswith(".gz"):
         open_method = gzip.open
     else:
         open_method = open
-    hasher = algorithm()
+    hasher = hash_algorithm()
     with open_method(filepath, "rb") as input_h:
         while True:
             block = input_h.read(block_size)
@@ -64,15 +64,19 @@ def compress_path(filepath: os.PathLike,
 
 def precompress_file(filepath: os.PathLike,
                      compresslevel = DEFAULT_COMPRESSION_LEVEL,
+                     hash_algorithm = DEFAULT_HASH_ALGORITHM,
                      force: bool = False) -> int:
     result = COMPRESSED
     gzipped_path = os.fspath(filepath) + ".gz"
     if os.path.exists(gzipped_path):
-        if (not force and hash_file_contents(filepath) ==
-                hash_file_contents(gzipped_path)):
-            return SKIPPED
-        else:
-            result = RECOMPRESSED
+        result = RECOMPRESSED
+        if not force:
+            file_hash = hash_file_contents(filepath,
+                                           hash_algorithm=hash_algorithm)
+            gzipped_hash = hash_file_contents(gzipped_path,
+                                              hash_algorithm=hash_algorithm)
+            if file_hash == gzipped_hash:
+                return SKIPPED
     compress_path(filepath, compresslevel)
     return result
 
@@ -92,3 +96,46 @@ def read_extensions_file(filepath: os.PathLike) -> Set[str]:
     with open(filepath, "rt") as input_h:
         return {line.strip() for line in input_h}
 
+
+def gzip_static(dir: os.PathLike,
+                extensions_file: os.PathLike = DEFAULT_EXTENSIONS_FILE,
+                compresslevel: int = DEFAULT_COMPRESSION_LEVEL,
+                hash_algorithm = DEFAULT_HASH_ALGORITHM,
+                force: bool = False) -> Tuple[int, int, int]:
+    results = [0, 0, 0]
+    extensions = read_extensions_file(extensions_file)
+    for static_file in find_static_files(dir, extensions):
+        result = precompress_file(static_file, compresslevel,
+                                  hash_algorithm, force)
+        results[result] += 1
+    return tuple(results)
+
+
+def argument_parser() -> argparse.ArgumentParser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("directory", type=str,
+                        help="The directory containing the static site")
+    parser.add_argument("-l", "--compression-level", choices=range(1,10),
+                        action="store_const", type=int,
+                        default=DEFAULT_COMPRESSION_LEVEL)
+    parser.add_argument("-e", "--extensions-file", type=str,
+                        default=DEFAULT_EXTENSIONS_FILE,
+                        help="A file with extensions to consider when "
+                             "compressing. Use one line per extension. "
+                             "Check the default for an example.")
+    parser.add_argument("-f", "--force", action="store_true",
+                        help="Force recompression of all earlier compressed "
+                             "files.")
+
+    return parser
+
+
+def main():
+    args = argument_parser().parse_args()
+    results = gzip_static(args.directory,
+                          extensions_file=args.extensions_file,
+                          compresslevel=args.compression_level,
+                          force=args.force)
+    print(f"New gzip files:     {results[COMPRESSED]}")
+    print(f"Updated gzip files: {results[RECOMPRESSED]}")
+    print(f"Skipped gzip files: {results[SKIPPED]}")
