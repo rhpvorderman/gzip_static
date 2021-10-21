@@ -20,9 +20,10 @@ import gzip
 import hashlib
 import os
 from pathlib import Path
+from typing import Generator, Set
 
 # Reading larger chunks of files makes it faster.
-DEFAULT_BLOCK_SIZE = 64 * 1024
+DEFAULT_BLOCK_SIZE = 32 * 1024
 # Hashlib.sha1 is the fasted algorithm that is guaranteed to be in hashlib.
 DEFAULT_HASH_ALGORITHM = hashlib.sha1
 DEFAULT_COMPRESSION_LEVEL=9
@@ -32,16 +33,16 @@ COMPRESSED = 1
 RECOMPRESSED = 2
 SKIPPED = 3
 
-EXTENSIONS_FILE = Path(__file__).parent / "extensions.txt"
+DEFAULT_EXTENSIONS_FILE = Path(__file__).parent / "extensions.txt"
 
 
 def hash_file_contents(filepath: os.PathLike,
                        algorithm=DEFAULT_HASH_ALGORITHM,
                        block_size:int = DEFAULT_BLOCK_SIZE):
     if os.fspath(filepath).endswith(".gz"):
-        open_method = open
-    else:
         open_method = gzip.open
+    else:
+        open_method = open
     hasher = algorithm()
     with open_method(filepath, "rb") as input_h:
         while True:
@@ -74,4 +75,20 @@ def precompress_file(filepath: os.PathLike,
             result = RECOMPRESSED
     compress_path(filepath, compresslevel)
     return result
+
+
+def find_static_files(dir: os.PathLike,
+                      extensions: Set[str],
+                      ) -> Generator[Path, None, None]:
+    for path in Path(os.fspath(dir)).iterdir():
+        if path.is_dir():
+            yield from find_static_files(path, extensions)
+        elif path.is_file() and path.suffix in extensions:
+            yield path
+        # TODO: Check if special behaviour is needed for symbolic links
+
+
+def read_extensions_file(filepath: os.PathLike) -> Set[str]:
+    with open(filepath, "rt") as input_h:
+        return {line.strip() for line in input_h}
 
