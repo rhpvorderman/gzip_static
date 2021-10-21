@@ -19,7 +19,7 @@ from pathlib import Path
 from setuptools import find_packages, setup
 
 setup(
-    name="gzip_static",
+    name="gzip-static",
     version="0.1.0-dev",
     description="Compress your static website with gzip for faster serving "
                 "with NGiNX's gzip_static on.",
@@ -49,7 +49,7 @@ setup(
     ],
     python_requires=">=3.6",
     entry_points={
-        'console_scripts': ['gzip_static=gzip_static:main']
+        'console_scripts': ['gzip-static=gzip_static:main']
     }
 
 )

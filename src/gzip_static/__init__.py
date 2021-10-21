@@ -115,9 +115,13 @@ def argument_parser() -> argparse.ArgumentParser():
     parser = argparse.ArgumentParser()
     parser.add_argument("directory", type=str,
                         help="The directory containing the static site")
-    parser.add_argument("-l", "--compression-level", choices=range(1,10),
-                        action="store_const", type=int,
-                        default=DEFAULT_COMPRESSION_LEVEL)
+    parser.add_argument("-l", "--compression-level",
+                        choices=range(1, 10),
+                        type=int,
+                        default=DEFAULT_COMPRESSION_LEVEL,
+                        help=f"The compression level that will be used for "
+                             f"the gzip compression. "
+                             f"Default: {DEFAULT_COMPRESSION_LEVEL}")
     parser.add_argument("-e", "--extensions-file", type=str,
                         default=DEFAULT_EXTENSIONS_FILE,
                         help="A file with extensions to consider when "
