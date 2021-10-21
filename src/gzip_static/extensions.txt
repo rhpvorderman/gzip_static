@@ -1,3 +1,9 @@
 .html
 .htm
 .js
+.css
+.json
+.rss
+.txt
+.xml
+.xsl
