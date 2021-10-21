@@ -1,0 +1,44 @@
+Python 3.9.2 (default, Feb 28 2021, 17:03:44)
+Type 'copyright', 'credits' or 'license' for more information
+IPython 7.28.0 -- An enhanced Interactive Python. Type '?' for help.
+
+In [1]: import hashlib, xxhash, zlib
+
+In [2]: from pathlib import Path
+
+In [3]: html  = Path("index.html")  # Retrieved from python.org on October 21st 2021. Size: 52 KB.
+
+In [4]: html_bytes = html.read_bytes()
+
+In [5]: %timeit hashlib.md5(html_bytes).digest()
+61.9 µs ± 9.8 ns per loop (mean ± std. dev. of 7 runs, 10000 loops each)
+
+In [6]: %timeit hashlib.sha1(html_bytes).digest()
+23.8 µs ± 91.8 ns per loop (mean ± std. dev. of 7 runs, 10000 loops each)
+
+In [7]: %timeit hashlib.sha224(html_bytes).digest()
+25.2 µs ± 58.1 ns per loop (mean ± std. dev. of 7 runs, 10000 loops each)
+
+In [8]: %timeit hashlib.sha256(html_bytes).digest()
+24.9 µs ± 8.55 ns per loop (mean ± std. dev. of 7 runs, 10000 loops each)
+
+In [9]: %timeit hashlib.sha384(html_bytes).digest()
+58.5 µs ± 27.6 ns per loop (mean ± std. dev. of 7 runs, 10000 loops each)
+
+In [10]: %timeit hashlib.sha512(html_bytes).digest()
+58.2 µs ± 26.4 ns per loop (mean ± std. dev. of 7 runs, 10000 loops each)
+
+In [11]: %timeit hashlib.blake2b(html_bytes).digest()
+65.4 µs ± 42.2 ns per loop (mean ± std. dev. of 7 runs, 10000 loops each)
+
+In [12]: %timeit hashlib.blake2s(html_bytes).digest()
+98.6 µs ± 663 ns per loop (mean ± std. dev. of 7 runs, 10000 loops each)
+
+In [13]: %timeit zlib.crc32(html_bytes)
+32.5 µs ± 33.5 ns per loop (mean ± std. dev. of 7 runs, 10000 loops each)
+
+In [14]: %timeit zlib.adler32(html_bytes)
+13.7 µs ± 40.3 ns per loop (mean ± std. dev. of 7 runs, 100000 loops each)
+
+In [15]: %timeit xxhash.xxh3_128(html_bytes).digest()
+2.64 µs ± 2.69 ns per loop (mean ± std. dev. of 7 runs, 100000 loops each)
