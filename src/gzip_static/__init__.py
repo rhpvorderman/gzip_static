@@ -14,3 +14,64 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with gzip_static.  If not, see <https://www.gnu.org/licenses/
 
+"""Functions to compress a website's static files."""
+
+import gzip
+import hashlib
+import os
+from pathlib import Path
+
+# Reading larger chunks of files makes it faster.
+DEFAULT_BLOCK_SIZE = 64 * 1024
+# Hashlib.sha1 is the fasted algorithm that is guaranteed to be in hashlib.
+DEFAULT_HASH_ALGORITHM = hashlib.sha1
+DEFAULT_COMPRESSION_LEVEL=9
+
+# Precompress ending states
+COMPRESSED = 1
+RECOMPRESSED = 2
+SKIPPED = 3
+
+EXTENSIONS_FILE = Path(__file__).parent / "extensions.txt"
+
+
+def hash_file_contents(filepath: os.PathLike,
+                       algorithm=DEFAULT_HASH_ALGORITHM,
+                       block_size:int = DEFAULT_BLOCK_SIZE):
+    if os.fspath(filepath).endswith(".gz"):
+        open_method = open
+    else:
+        open_method = gzip.open
+    hasher = algorithm()
+    with open_method(filepath, "rb") as input_h:
+        while True:
+            block = input_h.read(block_size)
+            if block == b"":
+                return hasher.digest()
+            hasher.update(block)
+
+
+def compress_path(filepath: os.PathLike,
+                  compresslevel: int = DEFAULT_COMPRESSION_LEVEL,
+                  block_size: int = DEFAULT_BLOCK_SIZE):
+    output_filepath = os.fspath(filepath) + ".gz"
+    with open(filepath, mode="rb") as input_h:
+        with gzip.open(output_filepath, mode="wb", compresslevel=compresslevel
+                       ) as output_h:
+            output_h.write(input_h.read(block_size))
+
+
+def precompress_file(filepath: os.PathLike,
+                     compresslevel = DEFAULT_COMPRESSION_LEVEL,
+                     force: bool = False) -> int:
+    result = COMPRESSED
+    gzipped_path = os.fspath(filepath) + ".gz"
+    if os.path.exists(gzipped_path):
+        if (not force and hash_file_contents(filepath) ==
+                hash_file_contents(gzipped_path)):
+            return SKIPPED
+        else:
+            result = RECOMPRESSED
+    compress_path(filepath, compresslevel)
+    return result
+
