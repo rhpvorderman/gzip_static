@@ -18,6 +18,7 @@
 import argparse
 import gzip
 import hashlib
+import logging
 import os
 from pathlib import Path
 from typing import Generator, Set, Tuple
@@ -59,7 +60,11 @@ def compress_path(filepath: os.PathLike,
     with open(filepath, mode="rb") as input_h:
         with gzip.open(output_filepath, mode="wb", compresslevel=compresslevel
                        ) as output_h:
-            output_h.write(input_h.read(block_size))
+            while True:
+                block = input_h.read(block_size)
+                if block == b"":
+                    return
+                output_h.write(block)
 
 
 def precompress_file(filepath: os.PathLike,
@@ -76,7 +81,11 @@ def precompress_file(filepath: os.PathLike,
             gzipped_hash = hash_file_contents(gzipped_path,
                                               hash_algorithm=hash_algorithm)
             if file_hash == gzipped_hash:
+                logging.debug(f"Skip {filepath}: already gzipped")
                 return SKIPPED
+            else:
+                logging.debug(f"Hashes do not match for {filepath}: "
+                              f"recompressing.")
     compress_path(filepath, compresslevel)
     return result
 
@@ -87,8 +96,12 @@ def find_static_files(dir: os.PathLike,
     for path in Path(os.fspath(dir)).iterdir():
         if path.is_dir():
             yield from find_static_files(path, extensions)
+        elif path.is_file() and path.suffix == ".gz":
+            continue
         elif path.is_file() and path.suffix in extensions:
             yield path
+        else:
+            logging.debug(f"Skip {path}: unsupported extension")
         # TODO: Check if special behaviour is needed for symbolic links
 
 
@@ -136,6 +149,7 @@ def argument_parser() -> argparse.ArgumentParser():
 
 def main():
     args = argument_parser().parse_args()
+    logging.basicConfig(level=logging.INFO)
     results = gzip_static(args.directory,
                           extensions_file=args.extensions_file,
                           compresslevel=args.compression_level,
