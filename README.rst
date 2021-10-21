@@ -4,10 +4,10 @@ gzip_static
 Compress your static website with gzip for faster serving with NGiNX's 
 gzip_static on.
 
-gzip_static compresses all static files with gzip and assures the content has
-been changed before compressing again. It does so by performing a checksum on
-the contents of the static file and its gzipped version. Guaranteeing that you
-do not publish outdated gzip files.
+gzip_static compresses all static files in a directory recursively. It assures
+the content has been changed before compressing again. It does so by performing
+a checksum on the contents of the static file and its gzipped version.
+This guarantees that you do not publish outdated gzip files.
 
 Rationale
 =========
