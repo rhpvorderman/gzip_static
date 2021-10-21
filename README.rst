@@ -24,7 +24,7 @@ best to manage precompression with a program that performs this check.
 
 Most programs out there are linked to a specific framework and most stand-alone
 programs are written in bash and do not perform checks. One notable exception
-is `express-static-gzip <https://github.com/tkoenig89/express-static-gzip>`_
+is `static-compress <https://github.com/neosmart/static-compress>`_
 which performs timestamp checking.
 
 Timestamp checking is not good enough in my opinion. The actual content of the
