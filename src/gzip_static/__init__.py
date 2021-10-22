@@ -25,7 +25,6 @@ import zlib
 from pathlib import Path
 from typing import Generator, Set, Tuple
 
-from isal import isal_zlib
 # Reading larger chunks of files makes it faster.
 DEFAULT_BLOCK_SIZE = 32 * 1024
 # Hashlib.sha1 is the fasted algorithm that is guaranteed to be in hashlib.
@@ -48,8 +47,19 @@ def hash_file_contents(filepath: os.PathLike,
     # This comes with a memory overhead of compression_ratio * block_size.
     decompressor = zlib.decompressobj(wbits=31)
     if is_gzip:
-        # Limit the block size when decompressing.
-        block_size=io.DEFAULT_BUFFER_SIZE
+        # Limit the block size when decompressing to limit memory overhead.
+        # Worst-case scenario: only a single character is present. Tested on
+        # a file with 100 million a's. Compressed with gzip -9: 97077
+        # characters. With zopfli it was bigger.
+        # Compression ratio is thus at maximum 100 million / 97077 ~= 1030.
+        # Thus the maximum memory usage is the block_size * 1030. With
+        # io.DEFAULT_BUFFER_SIZE that is about 8 mb. Which is acceptable:
+        # edge cases will not crash the program.
+        # NOTE: with gzip.open this is taken care of automatically because
+        # the output of decompressor.decompress is limited in size.
+        # This creates a lot of overhead though, and since we decompress only
+        # small files this overhead is noticeable in the performance.
+        block_size = io.DEFAULT_BUFFER_SIZE
     hasher = hash_algorithm()
     with open(filepath, "rb") as input_h:
         while True:
