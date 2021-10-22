@@ -20,6 +20,7 @@ import gzip
 import hashlib
 import logging
 import os
+import zlib
 from pathlib import Path
 from typing import Generator, Set, Tuple
 
@@ -40,16 +41,16 @@ DEFAULT_EXTENSIONS_FILE = Path(__file__).parent / "extensions.txt"
 def hash_file_contents(filepath: os.PathLike,
                        hash_algorithm=DEFAULT_HASH_ALGORITHM,
                        block_size:int = DEFAULT_BLOCK_SIZE):
-    if os.fspath(filepath).endswith(".gz"):
-        open_method = gzip.open
-    else:
-        open_method = open
+    is_gzip = os.fspath(filepath).endswith(".gz")
+    decompressor = zlib.decompressobj(wbits=31)
     hasher = hash_algorithm()
-    with open_method(filepath, "rb") as input_h:
+    with open(filepath, "rb") as input_h:
         while True:
             block = input_h.read(block_size)
             if block == b"":
                 return hasher.digest()
+            if is_gzip:
+                block = decompressor.decompress(block)
             hasher.update(block)
 
 
