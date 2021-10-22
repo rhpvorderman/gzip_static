@@ -54,7 +54,9 @@ def hash_file_contents(filepath: os.PathLike,
         # Compression ratio is thus at maximum 100 million / 97077 ~= 1030.
         # Thus the maximum memory usage is the block_size * 1030. With
         # io.DEFAULT_BUFFER_SIZE that is about 8 mb. Which is acceptable:
-        # edge cases will not crash the program.
+        # edge cases will not crash the program with an out of memory error.
+        # Repeating the test with only b"\xff", (so only binary ones) produced
+        # a similar result.
         # NOTE: with gzip.open this is taken care of automatically because
         # the output of decompressor.decompress is limited in size.
         # This creates a lot of overhead though, and since we decompress only
