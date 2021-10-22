@@ -18,12 +18,14 @@
 import argparse
 import gzip
 import hashlib
+import io
 import logging
 import os
 import zlib
 from pathlib import Path
 from typing import Generator, Set, Tuple
 
+from isal import isal_zlib
 # Reading larger chunks of files makes it faster.
 DEFAULT_BLOCK_SIZE = 32 * 1024
 # Hashlib.sha1 is the fasted algorithm that is guaranteed to be in hashlib.
@@ -42,7 +44,12 @@ def hash_file_contents(filepath: os.PathLike,
                        hash_algorithm=DEFAULT_HASH_ALGORITHM,
                        block_size:int = DEFAULT_BLOCK_SIZE):
     is_gzip = os.fspath(filepath).endswith(".gz")
+    # Using a zlib decompressor has much less overhead than using GzipFile.
+    # This comes with a memory overhead of compression_ratio * block_size.
     decompressor = zlib.decompressobj(wbits=31)
+    if is_gzip:
+        # Limit the block size when decompressing.
+        block_size=io.DEFAULT_BUFFER_SIZE
     hasher = hash_algorithm()
     with open(filepath, "rb") as input_h:
         while True:
