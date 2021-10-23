@@ -16,6 +16,7 @@
 
 """Functions to compress a website's static files."""
 import argparse
+import array
 import gzip
 import hashlib
 import io
@@ -23,7 +24,10 @@ import logging
 import os
 import zlib
 from pathlib import Path
-from typing import Generator, Set, Tuple
+from typing import Generator, Set, Tuple, Union
+
+# Accepted by open functions
+Filepath = Union[str, os.PathLike]
 
 # Reading larger chunks of files makes it faster.
 DEFAULT_BLOCK_SIZE = 32 * 1024
@@ -39,7 +43,7 @@ SKIPPED = 2
 DEFAULT_EXTENSIONS_FILE = Path(__file__).parent / "extensions.txt"
 
 
-def hash_file_contents(filepath: os.PathLike,
+def hash_file_contents(filepath: Filepath,
                        hash_algorithm=DEFAULT_HASH_ALGORITHM,
                        block_size:int = DEFAULT_BLOCK_SIZE):
     is_gzip = os.fspath(filepath).endswith(".gz")
@@ -73,7 +77,7 @@ def hash_file_contents(filepath: os.PathLike,
             hasher.update(block)
 
 
-def compress_path(filepath: os.PathLike,
+def compress_path(filepath: Filepath,
                   compresslevel: int = DEFAULT_COMPRESSION_LEVEL,
                   block_size: int = DEFAULT_BLOCK_SIZE):
     output_filepath = os.fspath(filepath) + ".gz"
@@ -84,10 +88,10 @@ def compress_path(filepath: os.PathLike,
                 block = input_h.read(block_size)
                 if block == b"":
                     return
-                output_h.write(block)
+                output_h.write(block)  # type: ignore
 
 
-def precompress_file(filepath: os.PathLike,
+def precompress_file(filepath: Filepath,
                      compresslevel = DEFAULT_COMPRESSION_LEVEL,
                      hash_algorithm = DEFAULT_HASH_ALGORITHM,
                      force: bool = False) -> int:
@@ -110,7 +114,7 @@ def precompress_file(filepath: os.PathLike,
     return result
 
 
-def find_static_files(dir: os.PathLike,
+def find_static_files(dir: Filepath,
                       extensions: Set[str],
                       ) -> Generator[Path, None, None]:
     for path in Path(os.fspath(dir)).iterdir():
@@ -126,13 +130,13 @@ def find_static_files(dir: os.PathLike,
         # TODO: Check if special behaviour is needed for symbolic links
 
 
-def read_extensions_file(filepath: os.PathLike) -> Set[str]:
+def read_extensions_file(filepath: Filepath) -> Set[str]:
     with open(filepath, "rt") as input_h:
         return {line.strip() for line in input_h}
 
 
-def gzip_static(dir: os.PathLike,
-                extensions_file: os.PathLike = DEFAULT_EXTENSIONS_FILE,
+def gzip_static(dir: Filepath,
+                extensions_file: Filepath = DEFAULT_EXTENSIONS_FILE,
                 compresslevel: int = DEFAULT_COMPRESSION_LEVEL,
                 hash_algorithm = DEFAULT_HASH_ALGORITHM,
                 force: bool = False) -> Tuple[int, int, int]:
@@ -142,10 +146,10 @@ def gzip_static(dir: os.PathLike,
         result = precompress_file(static_file, compresslevel,
                                   hash_algorithm, force)
         results[result] += 1
-    return tuple(results)
+    return tuple(results)  # type: ignore  # 3 values are guaranteed
 
 
-def argument_parser() -> argparse.ArgumentParser():
+def argument_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument("directory", type=str,
                         help="The directory containing the static site")
