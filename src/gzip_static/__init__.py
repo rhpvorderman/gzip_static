@@ -61,6 +61,16 @@ try:
 except ImportError:
     zlib_decompressobj = zlib.decompressobj
 
+try:
+    import xxhash
+    DEFAULT_HASH_ALGORITHM = xxhash.xxh3_128
+except ImportError:
+    pass
+except AttributeError:
+    warnings.warn(f"This xxhash version ({xxhash.VERSION}) does not have "
+                  f"xxh3_128. Please update to version 2.0.0 or higher to "
+                  f"make use of this hash.")
+
 
 def hash_file_contents(filepath: Filepath,
                        hash_algorithm=DEFAULT_HASH_ALGORITHM,
