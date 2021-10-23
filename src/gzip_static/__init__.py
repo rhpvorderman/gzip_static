@@ -54,6 +54,13 @@ except ImportError:
 # Zopfli performs in memory compression
 ZOPFLI_MAXIMUM_SIZE = 50 * 1024 * 1024
 
+# If isal is present we can perform much faster decompression.
+try:
+    from isal import isal_zlib
+    zlib_decompressobj = isal_zlib.decompressobj
+except ImportError:
+    zlib_decompressobj = zlib.decompressobj
+
 
 def hash_file_contents(filepath: Filepath,
                        hash_algorithm=DEFAULT_HASH_ALGORITHM,
@@ -61,7 +68,7 @@ def hash_file_contents(filepath: Filepath,
     is_gzip = os.fspath(filepath).endswith(".gz")
     # Using a zlib decompressor has much less overhead than using GzipFile.
     # This comes with a memory overhead of compression_ratio * block_size.
-    decompressor = zlib.decompressobj(wbits=31)
+    decompressor = zlib_decompressobj(wbits=31)
     if is_gzip:
         # Limit the block size when decompressing to limit memory overhead.
         # Worst-case scenario: only a single character is present. Tested on
