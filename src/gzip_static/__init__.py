@@ -48,7 +48,6 @@ AVAILABLE_COMPRESSION_LEVELS = [6, 9]
 try:
     from zopfli import gzip as zopfli_gzip  # type: ignore
     AVAILABLE_COMPRESSION_LEVELS.append(11)
-    DEFAULT_COMPRESSION_LEVEL = 11
 except ImportError:
     zopfli_gzip = None
 
@@ -108,6 +107,7 @@ def compress_path(filepath: Filepath,
             data = Path(filepath).read_bytes()
             compressed = zopfli_gzip.compress(data)
             Path(output_filepath).write_bytes(compressed)
+            return
     with open(filepath, mode="rb") as input_h:
         with gzip.open(output_filepath, mode="wb", compresslevel=compresslevel
                        ) as output_h:
@@ -137,6 +137,8 @@ def compress_file_if_changed(filepath: Filepath,
             else:
                 logging.debug(f"Hashes do not match for {filepath}: "
                               f"recompressing.")
+    logging.debug(f"Compressing {filepath} with compression level "
+                  f"{compresslevel}")
     compress_path(filepath, compresslevel)
     return result
 
@@ -207,6 +209,10 @@ def argument_parser() -> argparse.ArgumentParser:
                                 f"the gzip compression. Use 11 for zopfli "
                                 f"compression (if available). "
                                 f"Default: {DEFAULT_COMPRESSION_LEVEL}")
+    complevel.add_argument("--zopfli", action="store_const", const=11,
+                           dest="compression_level",
+                           help="Use zopfli for the compression. Alias for "
+                                "-l 11 or --compression-level 11.")
     parser.add_argument("-e", "--extensions-file", type=str,
                         default=DEFAULT_EXTENSIONS_FILE,
                         help="A file with extensions to consider when "
