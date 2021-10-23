@@ -16,7 +16,6 @@
 
 """Functions to compress a website's static files."""
 import argparse
-import array
 import gzip
 import hashlib
 import io
@@ -33,9 +32,9 @@ Filepath = Union[str, os.PathLike]
 DEFAULT_BLOCK_SIZE = 32 * 1024
 # Hashlib.sha1 is the fasted algorithm that is guaranteed to be in hashlib.
 DEFAULT_HASH_ALGORITHM = hashlib.sha1
-DEFAULT_COMPRESSION_LEVEL=9
+DEFAULT_COMPRESSION_LEVEL = 9
 
-# Precompress ending states
+# Compress_file_if_changed ending states
 COMPRESSED = 0
 RECOMPRESSED = 1
 SKIPPED = 2
@@ -45,7 +44,7 @@ DEFAULT_EXTENSIONS_FILE = Path(__file__).parent / "extensions.txt"
 
 def hash_file_contents(filepath: Filepath,
                        hash_algorithm=DEFAULT_HASH_ALGORITHM,
-                       block_size:int = DEFAULT_BLOCK_SIZE):
+                       block_size: int = DEFAULT_BLOCK_SIZE):
     is_gzip = os.fspath(filepath).endswith(".gz")
     # Using a zlib decompressor has much less overhead than using GzipFile.
     # This comes with a memory overhead of compression_ratio * block_size.
@@ -91,10 +90,10 @@ def compress_path(filepath: Filepath,
                 output_h.write(block)  # type: ignore
 
 
-def precompress_file(filepath: Filepath,
-                     compresslevel = DEFAULT_COMPRESSION_LEVEL,
-                     hash_algorithm = DEFAULT_HASH_ALGORITHM,
-                     force: bool = False) -> int:
+def compress_file_if_changed(filepath: Filepath,
+                             compresslevel=DEFAULT_COMPRESSION_LEVEL,
+                             hash_algorithm=DEFAULT_HASH_ALGORITHM,
+                             force: bool = False) -> int:
     result = COMPRESSED
     gzipped_path = os.fspath(filepath) + ".gz"
     if os.path.exists(gzipped_path):
@@ -114,19 +113,33 @@ def precompress_file(filepath: Filepath,
     return result
 
 
+def get_extension(filename: str):
+    """
+    The filename's extension, if any.
+
+    This includes the leading period. For example: '.txt'
+    """
+    # Implementation copied from pathlib.PurePath.suffix()
+    index = filename.rfind(".")
+    if 0 < index < len(filename) - 1:
+        return filename[index:]
+    else:
+        return ""
+
+
 def find_static_files(dir: Filepath,
                       extensions: Set[str],
-                      ) -> Generator[Path, None, None]:
-    for path in Path(os.fspath(dir)).iterdir():
-        if path.is_file():
-            if path.suffix == ".gz":
+                      ) -> Generator[str, None, None]:
+    for dir_entry in os.scandir(dir):  # type: os.DirEntry
+        if dir_entry.is_file():
+            if dir_entry.name.endswith(".gz"):
                 continue
-            if path.suffix in extensions:
-                yield path
-        elif path.is_dir():
-            yield from find_static_files(path, extensions)
+            if get_extension(dir_entry.name) in extensions:
+                yield dir_entry.path
+        elif dir_entry.is_dir():
+            yield from find_static_files(dir_entry.path, extensions)
         else:
-            logging.debug(f"Skip {path}: unsupported extension")
+            logging.debug(f"Skip {dir_entry.path}: unsupported extension")
         # TODO: Check if special behaviour is needed for symbolic links
 
 
@@ -138,13 +151,13 @@ def read_extensions_file(filepath: Filepath) -> Set[str]:
 def gzip_static(dir: Filepath,
                 extensions_file: Filepath = DEFAULT_EXTENSIONS_FILE,
                 compresslevel: int = DEFAULT_COMPRESSION_LEVEL,
-                hash_algorithm = DEFAULT_HASH_ALGORITHM,
+                hash_algorithm=DEFAULT_HASH_ALGORITHM,
                 force: bool = False) -> Tuple[int, int, int]:
     results = [0, 0, 0]
     extensions = read_extensions_file(extensions_file)
     for static_file in find_static_files(dir, extensions):
-        result = precompress_file(static_file, compresslevel,
-                                  hash_algorithm, force)
+        result = compress_file_if_changed(static_file, compresslevel,
+                                          hash_algorithm, force)
         results[result] += 1
     return tuple(results)  # type: ignore  # 3 values are guaranteed
 
