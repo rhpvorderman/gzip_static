@@ -114,12 +114,13 @@ def find_static_files(dir: os.PathLike,
                       extensions: Set[str],
                       ) -> Generator[Path, None, None]:
     for path in Path(os.fspath(dir)).iterdir():
-        if path.is_dir():
+        if path.is_file():
+            if path.suffix == ".gz":
+                continue
+            if path.suffix in extensions:
+                yield path
+        elif path.is_dir():
             yield from find_static_files(path, extensions)
-        elif path.is_file() and path.suffix == ".gz":
-            continue
-        elif path.is_file() and path.suffix in extensions:
-            yield path
         else:
             logging.debug(f"Skip {path}: unsupported extension")
         # TODO: Check if special behaviour is needed for symbolic links
