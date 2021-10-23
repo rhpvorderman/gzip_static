@@ -59,10 +59,11 @@ try:
     from isal import isal_zlib
     zlib_decompressobj = isal_zlib.decompressobj
 except ImportError:
-    zlib_decompressobj = zlib.decompressobj
+    zlib_decompressobj = zlib.decompressobj  # type: ignore
 
+# If xxhash is present we can perform much faster checksumming
 try:
-    import xxhash
+    import xxhash  # type: ignore
     DEFAULT_HASH_ALGORITHM = xxhash.xxh3_128
 except ImportError:
     pass
