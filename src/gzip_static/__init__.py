@@ -97,7 +97,7 @@ def compress_path(filepath: Filepath,
         if zopfli_gzip is None:
             raise ModuleNotFoundError(
                 "Zopfli is not installed. Compressing with zopfli is not "
-                "supported "
+                "supported. "
                 "Install zopfi with 'pip install zopfli'.")
         if os.stat(filepath).st_size > ZOPFLI_MAXIMUM_SIZE:
             warnings.warn(f"{filepath} is larger than {ZOPFLI_MAXIMUM_SIZE} "
@@ -221,13 +221,16 @@ def argument_parser() -> argparse.ArgumentParser:
     parser.add_argument("-f", "--force", action="store_true",
                         help="Force recompression of all earlier compressed "
                              "files.")
+    parser.add_argument("-d", "--debug", action="store_true",
+                        help="Print debug information to stderr.")
 
     return parser
 
 
 def main():
     args = argument_parser().parse_args()
-    logging.basicConfig(level=logging.INFO)
+    if args.debug:
+        logging.basicConfig(level=logging.DEBUG)
     results = gzip_static(args.directory,
                           extensions_file=args.extensions_file,
                           compresslevel=args.compression_level,
