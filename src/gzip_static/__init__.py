@@ -132,6 +132,10 @@ def find_static_files(dir: Filepath,
                       ) -> Generator[str, None, None]:
     for dir_entry in os.scandir(dir):  # type: os.DirEntry
         if dir_entry.is_file():
+            # Cheap check to skip all the .gz files quickly. This is 4x faster
+            # than getting the extension and checking it. Since half of the
+            # files in the directory will be .gz files after a rerun this is
+            # worth it.
             if dir_entry.name.endswith(".gz"):
                 continue
             if get_extension(dir_entry.name) in extensions:
