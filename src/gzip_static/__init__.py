@@ -21,6 +21,7 @@ import hashlib
 import io
 import logging
 import os
+import warnings
 import zlib
 from pathlib import Path
 from typing import Generator, Set, Tuple, Union
@@ -40,6 +41,19 @@ RECOMPRESSED = 1
 SKIPPED = 2
 
 DEFAULT_EXTENSIONS_FILE = Path(__file__).parent / "extensions.txt"
+
+# Limit CLI compresslevels to 6 and 9 to keep CLI clean.
+AVAILABLE_COMPRESSION_LEVELS = [6, 9]
+
+try:
+    from zopfli import gzip as zopfli_gzip  # type: ignore
+    AVAILABLE_COMPRESSION_LEVELS.append(11)
+    DEFAULT_COMPRESSION_LEVEL = 11
+except ImportError:
+    zopfli_gzip = None
+
+# Zopfli performs in memory compression
+ZOPFLI_MAXIMUM_SIZE = 50 * 1024 * 1024
 
 
 def hash_file_contents(filepath: Filepath,
@@ -80,6 +94,20 @@ def compress_path(filepath: Filepath,
                   compresslevel: int = DEFAULT_COMPRESSION_LEVEL,
                   block_size: int = DEFAULT_BLOCK_SIZE):
     output_filepath = os.fspath(filepath) + ".gz"
+    if compresslevel == 11:
+        if zopfli_gzip is None:
+            raise ModuleNotFoundError(
+                "Zopfli is not installed. Compressing with zopfli is not "
+                "supported "
+                "Install zopfi with 'pip install zopfli'.")
+        if os.stat(filepath).st_size > ZOPFLI_MAXIMUM_SIZE:
+            warnings.warn(f"{filepath} is larger than {ZOPFLI_MAXIMUM_SIZE} "
+                          f"bytes. Fallback to gzip compression level 9.")
+            compresslevel = 9
+        else:
+            data = Path(filepath).read_bytes()
+            compressed = zopfli_gzip.compress(data)
+            Path(output_filepath).write_bytes(compressed)
     with open(filepath, mode="rb") as input_h:
         with gzip.open(output_filepath, mode="wb", compresslevel=compresslevel
                        ) as output_h:
@@ -170,13 +198,15 @@ def argument_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument("directory", type=str,
                         help="The directory containing the static site")
-    parser.add_argument("-l", "--compression-level",
-                        choices=range(1, 10),
-                        type=int,
-                        default=DEFAULT_COMPRESSION_LEVEL,
-                        help=f"The compression level that will be used for "
-                             f"the gzip compression. "
-                             f"Default: {DEFAULT_COMPRESSION_LEVEL}")
+    complevel = parser.add_mutually_exclusive_group()
+    complevel.add_argument("-l", "--compression-level",
+                           choices=AVAILABLE_COMPRESSION_LEVELS,
+                           type=int,
+                           default=DEFAULT_COMPRESSION_LEVEL,
+                           help=f"The compression level that will be used for "
+                                f"the gzip compression. Use 11 for zopfli "
+                                f"compression (if available). "
+                                f"Default: {DEFAULT_COMPRESSION_LEVEL}")
     parser.add_argument("-e", "--extensions-file", type=str,
                         default=DEFAULT_EXTENSIONS_FILE,
                         help="A file with extensions to consider when "
