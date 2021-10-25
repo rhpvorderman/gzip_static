@@ -1,0 +1,7 @@
+New gzip files:     0
+Updated gzip files: 6374
+Skipped gzip files: 0
+
+real    0m8,458s
+user    0m8,262s
+sys     0m0,196s
