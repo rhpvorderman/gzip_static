@@ -16,7 +16,6 @@
 # along with gzip-static.  If not, see <https://www.gnu.org/licenses/>.
 
 
-
 """Functions to compress a website's static files."""
 import argparse
 import gzip
@@ -80,10 +79,10 @@ def hash_file_contents(filepath: Filepath,
                        hash_algorithm=DEFAULT_HASH_ALGORITHM,
                        block_size: int = DEFAULT_BLOCK_SIZE):
     is_gzip = os.fspath(filepath).endswith(".gz")
-    # Using a zlib decompressor has much less overhead than using GzipFile.
-    # This comes with a memory overhead of compression_ratio * block_size.
-    decompressor = zlib_decompressobj(wbits=31)
     if is_gzip:
+        # Using a zlib decompressor has much less overhead than using GzipFile.
+        # This comes with a memory overhead of compression_ratio * block_size.
+        decompressor = zlib_decompressobj(wbits=31)
         # Limit the block size when decompressing to limit memory overhead.
         # Worst-case scenario: only a single character is present. Tested on
         # a file with 100 million a's. Compressed with gzip -9: 97077
