@@ -27,7 +27,7 @@ setup(
                 "with NGiNX's gzip_static on.",
     author="Ruben Vorderman",
     author_email="rubenvorderman@gmail.com",  # A placeholder for now
-    long_description=Path("README.rst").read_text(),
+    long_description=Path("README.rst").read_text(encoding='UTF-8'),
     long_description_content_type="text/x-rst",
     license="GPL-3.0-or-later",
     keywords="static html precompression gzip checksum",
