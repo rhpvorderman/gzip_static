@@ -50,6 +50,11 @@ setup(
         "(GPLv3+)",
     ],
     python_requires=">=3.6",
+    extras_require={
+        "zopfli": ["zopfli"],
+        "performance": ["xxhash>=2.0.0", "isal"],
+        "full": ["zopfli", "xxhash>=2.0.0", "isal"]
+    },
     entry_points={
         'console_scripts': ['gzip-static=gzip_static:main']
     }
