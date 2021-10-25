@@ -1,4 +1,4 @@
-gzip-static
+gzip_static
 ===========
 
 Compress your static website with gzip for faster serving with NGiNX's 

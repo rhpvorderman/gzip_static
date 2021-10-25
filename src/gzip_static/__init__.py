@@ -1,19 +1,19 @@
 # Copyright (C) 2021 Ruben Vorderman
 #
-# This file is part of gzip-static.
+# This file is part of gzip_static.
 #
-# gzip-static is free software: you can redistribute it and/or modify
+# gzip_static is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# gzip-static is distributed in the hope that it will be useful,
+# gzip_static is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with gzip-static.  If not, see <https://www.gnu.org/licenses/>.
+# along with gzip_static.  If not, see <https://www.gnu.org/licenses/>.
 
 
 """Functions to compress a website's static files."""
