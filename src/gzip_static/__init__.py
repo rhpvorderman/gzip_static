@@ -190,10 +190,10 @@ def find_static_files(dir: Filepath,
                 continue
             if get_extension(dir_entry.name) in extensions:
                 yield dir_entry.path
+            else:
+                logging.debug(f"Skip {dir_entry.path}: unsupported extension")
         elif dir_entry.is_dir():
             yield from find_static_files(dir_entry.path, extensions)
-        else:
-            logging.debug(f"Skip {dir_entry.path}: unsupported extension")
         # TODO: Check if special behaviour is needed for symbolic links
 
 

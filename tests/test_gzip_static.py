@@ -22,7 +22,8 @@ import shutil
 import tempfile
 from pathlib import Path
 
-from gzip_static import COMPRESSED, RECOMPRESSED, SKIPPED, \
+from gzip_static import COMPRESSED, DEFAULT_EXTENSIONS_FILE, RECOMPRESSED, \
+    SKIPPED, \
     hash_file_contents, compress_path, \
     compress_file_if_changed, get_extension, find_static_files, \
     read_extensions_file, gzip_static, main
@@ -110,3 +111,20 @@ def test_compress_file_if_changed_no_companion_gz():
     assert not test_gz.exists()
     assert compress_file_if_changed(test_file) == COMPRESSED
     assert test_gz.exists()
+
+
+def test_find_static_files():
+    test_dir = Path(tempfile.mkdtemp())
+    (test_dir / "sub_dir").mkdir()
+    (test_dir / "index.html").touch()
+    (test_dir / "archive.tar.gz").touch()
+    (test_dir / "sub_dir" / "some.js").touch()
+    (test_dir / "sub_dir" / "some.css").touch()
+    (test_dir / "notgzippable.png").touch()
+    assert set(
+        find_static_files(test_dir,
+                          read_extensions_file(DEFAULT_EXTENSIONS_FILE))
+    ) == {str(test_dir / "index.html"),
+          str(test_dir / "sub_dir" / "some.js"),
+          str(test_dir / "sub_dir" / "some.css")}
+    shutil.rmtree(test_dir)
