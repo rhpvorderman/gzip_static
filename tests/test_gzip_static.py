@@ -22,20 +22,19 @@ import tempfile
 from pathlib import Path
 
 from gzip_static import COMPRESSED, DEFAULT_EXTENSIONS_FILE, \
-    DEFAULT_HASH_ALGORITHM, RECOMPRESSED, SKIPPED, \
-    hash_file_contents, compress_path, \
-    compress_file_if_changed, get_extension, find_static_files, \
-    read_extensions_file, gzip_static, main
+    DEFAULT_HASH_ALGORITHM, RECOMPRESSED, SKIPPED, compress_file_if_changed, \
+    compress_path, find_static_files, get_extension, gzip_static, \
+    hash_file_contents, main, read_extensions_file
 
 import pytest
 
 try:
     import zopfli
-    zopfli_installed = True
 except ImportError:
-    zopfli_installed = False
+    zopfli = None
 
 DATA = b"This is a test string with some compressable data."
+
 
 @pytest.mark.parametrize(["filename", "extension"], [
     ("NO_EXTENSION", ""),
@@ -70,7 +69,7 @@ def test_compress_path(compresslevel):
     shutil.rmtree(test_dir)
 
 
-@pytest.mark.skipif(zopfli_installed,
+@pytest.mark.skipif(bool(zopfli),
                     reason="Test exception when zopfli is not installed")
 def test_compress_path_no_zopfli():
     test_dir = Path(tempfile.mkdtemp())
@@ -81,7 +80,7 @@ def test_compress_path_no_zopfli():
     error.match("zopfli")
 
 
-@pytest.mark.skipif(not zopfli_installed,
+@pytest.mark.skipif(not bool(zopfli),
                     reason="Test function normally when zopfli is installed")
 def test_compress_path_zopfli():
     test_dir = Path(tempfile.mkdtemp())
