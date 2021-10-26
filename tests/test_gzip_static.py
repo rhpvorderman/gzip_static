@@ -18,6 +18,7 @@
 import gzip
 import os
 import shutil
+import sys
 import tempfile
 from pathlib import Path
 
@@ -154,3 +155,37 @@ def test_find_static_files():
           str(test_dir / "sub_dir" / "some.js"),
           str(test_dir / "sub_dir" / "some.css")}
     shutil.rmtree(test_dir)
+
+
+def test_gzip_static():
+    test_dir = Path(tempfile.mkdtemp())
+    Path(test_dir, "index.html").write_bytes(b"bla")
+    Path(test_dir, "index.html.gz").write_bytes(gzip.compress(b"bla"))
+    Path(test_dir, "bla.js").write_bytes(b"bla")
+    Path(test_dir, "my.css").write_bytes(b"blabla")
+    Path(test_dir, "my.css.gz").write_bytes(gzip.compress(b"bla"))
+    results = gzip_static(test_dir)
+    assert results[COMPRESSED] == 1
+    assert results[RECOMPRESSED] == 1
+    assert results[SKIPPED] == 1
+    assert Path(test_dir, "bla.js.gz").exists()
+    assert gzip.decompress(Path(test_dir, "my.css.gz").read_bytes()
+                           ) == b"blabla"
+
+
+def test_main(capsys):
+    test_dir = Path(tempfile.mkdtemp())
+    Path(test_dir, "index.html").write_bytes(b"bla")
+    Path(test_dir, "index.html.gz").write_bytes(gzip.compress(b"bla"))
+    Path(test_dir, "bla.js").write_bytes(b"bla")
+    Path(test_dir, "my.css").write_bytes(b"blabla")
+    Path(test_dir, "my.css.gz").write_bytes(gzip.compress(b"bla"))
+    sys.argv =["", str(test_dir), "--debug"]
+    main()
+    result = capsys.readouterr()
+    assert "New gzip files:     1" in result.out
+    assert "Updated gzip files: 1" in result.out
+    assert "Skipped gzip files: 1" in result.out
+    assert Path(test_dir, "bla.js.gz").exists()
+    assert gzip.decompress(Path(test_dir, "my.css.gz").read_bytes()
+                           ) == b"blabla"
