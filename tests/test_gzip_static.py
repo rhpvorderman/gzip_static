@@ -16,21 +16,18 @@
 # along with gzip_static.  If not, see <https://www.gnu.org/licenses/>.
 
 import gzip
-import hashlib
 import os
 import shutil
 import tempfile
 from pathlib import Path
 
-from gzip_static import COMPRESSED, DEFAULT_EXTENSIONS_FILE, RECOMPRESSED, \
-    SKIPPED, \
+from gzip_static import COMPRESSED, DEFAULT_EXTENSIONS_FILE, \
+    DEFAULT_HASH_ALGORITHM, RECOMPRESSED, SKIPPED, \
     hash_file_contents, compress_path, \
     compress_file_if_changed, get_extension, find_static_files, \
     read_extensions_file, gzip_static, main
 
 import pytest
-
-import xxhash
 
 DATA = b"This is a test string with some compressable data."
 
@@ -43,8 +40,8 @@ def test_get_extension(filename, extension):
     assert get_extension(filename) == extension
 
 
-@pytest.mark.parametrize("hash_func", [xxhash.xxh3_128, hashlib.sha1])
-def test_hash_file_contents(hash_func):
+def test_hash_file_contents():
+    hash_func = DEFAULT_HASH_ALGORITHM
     test_dir = Path(tempfile.mkdtemp())
     test_file = Path(test_dir, "test_file")
     test_file.write_bytes(DATA)
@@ -55,7 +52,7 @@ def test_hash_file_contents(hash_func):
     shutil.rmtree(test_dir)
 
 
-@pytest.mark.parametrize("compresslevel", [6, 9, 11])
+@pytest.mark.parametrize("compresslevel", [6, 9])
 def test_compress_path(compresslevel):
     test_dir = Path(tempfile.mkdtemp())
     test_file = test_dir / "test_file"
