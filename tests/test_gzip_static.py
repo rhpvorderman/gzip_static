@@ -29,6 +29,12 @@ from gzip_static import COMPRESSED, DEFAULT_EXTENSIONS_FILE, \
 
 import pytest
 
+try:
+    import zopfli
+    zopfli_installed = True
+except ImportError:
+    zopfli_installed = False
+
 DATA = b"This is a test string with some compressable data."
 
 @pytest.mark.parametrize(["filename", "extension"], [
@@ -58,6 +64,30 @@ def test_compress_path(compresslevel):
     test_file = test_dir / "test_file"
     test_file.write_bytes(DATA)
     compress_path(test_file, compresslevel=compresslevel)
+    gzipped_file = Path(os.fspath(test_file) + ".gz")
+    assert gzipped_file.exists()
+    assert gzip.decompress(gzipped_file.read_bytes()) == DATA
+    shutil.rmtree(test_dir)
+
+
+@pytest.mark.skipif(zopfli_installed,
+                    reason="Test exception when zopfli is not installed")
+def test_compress_path_no_zopfli():
+    test_dir = Path(tempfile.mkdtemp())
+    test_file = test_dir / "test_file"
+    test_file.write_bytes(DATA)
+    with pytest.raises(ModuleNotFoundError) as error:
+        compress_path(test_file, compresslevel=11)
+    error.match("zopfli")
+
+
+@pytest.mark.skipif(not zopfli_installed,
+                    reason="Test function normally when zopfli is installed")
+def test_compress_path_zopfli():
+    test_dir = Path(tempfile.mkdtemp())
+    test_file = test_dir / "test_file"
+    test_file.write_bytes(DATA)
+    compress_path(test_file, compresslevel=11)
     gzipped_file = Path(os.fspath(test_file) + ".gz")
     assert gzipped_file.exists()
     assert gzip.decompress(gzipped_file.read_bytes()) == DATA
