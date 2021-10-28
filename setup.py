@@ -27,7 +27,7 @@ setup(
                 "with NGiNX's gzip_static on.",
     author="Ruben Vorderman",
     author_email="rubenvorderman@gmail.com",  # A placeholder for now
-    long_description=Path("README.rst").read_text(),
+    long_description=Path("README.rst").read_text(encoding='UTF-8'),
     long_description_content_type="text/x-rst",
     license="GPL-3.0-or-later",
     keywords="static html precompression gzip checksum",
@@ -50,6 +50,11 @@ setup(
         "(GPLv3+)",
     ],
     python_requires=">=3.6",
+    extras_require={
+        "zopfli": ["zopfli"],
+        "performance": ["xxhash>=2.0.0", "isal"],
+        "full": ["zopfli", "xxhash>=2.0.0", "isal"]
+    },
     entry_points={
         'console_scripts': ['gzip-static=gzip_static:main']
     }
