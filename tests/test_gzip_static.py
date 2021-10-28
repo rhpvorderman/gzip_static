@@ -30,7 +30,7 @@ from gzip_static import COMPRESSED, DEFAULT_EXTENSIONS_FILE, \
 import pytest
 
 try:
-    import zopfli
+    import zopfli  # type: ignore
 except ImportError:
     zopfli = None
 
@@ -180,7 +180,7 @@ def test_main(capsys):
     Path(test_dir, "bla.js").write_bytes(b"bla")
     Path(test_dir, "my.css").write_bytes(b"blabla")
     Path(test_dir, "my.css.gz").write_bytes(gzip.compress(b"bla"))
-    sys.argv =["", str(test_dir), "--debug"]
+    sys.argv = ["", str(test_dir), "--debug"]
     main()
     result = capsys.readouterr()
     assert "New gzip files:     1" in result.out
