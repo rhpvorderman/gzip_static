@@ -24,8 +24,8 @@ from pathlib import Path
 
 from gzip_static import COMPRESSED, DEFAULT_EXTENSIONS_FILE, \
     DEFAULT_HASH_ALGORITHM, RECOMPRESSED, SKIPPED, compress_file_if_changed, \
-    compress_path, find_static_files, get_extension, gzip_static, \
-    hash_file_contents, main, read_extensions_file
+    compress_path, find_orphans_main, find_static_files, get_extension, \
+    gzip_static, hash_file_contents, main, read_extensions_file
 
 import pytest
 
@@ -180,12 +180,29 @@ def test_main(capsys):
     Path(test_dir, "bla.js").write_bytes(b"bla")
     Path(test_dir, "my.css").write_bytes(b"blabla")
     Path(test_dir, "my.css.gz").write_bytes(gzip.compress(b"bla"))
-    sys.argv = ["", str(test_dir), "--debug"]
+    Path(test_dir, "orphaned.html.gz").write_bytes(gzip.compress(b"No parent"))
+    sys.argv = ["", str(test_dir), "--debug", "--remove-orphans"]
     main()
     result = capsys.readouterr()
-    assert "New gzip files:     1" in result.out
+    assert "Created gzip files: 1" in result.out
     assert "Updated gzip files: 1" in result.out
     assert "Skipped gzip files: 1" in result.out
+    assert "Deleted gzip files: 1" in result.out
     assert Path(test_dir, "bla.js.gz").exists()
     assert gzip.decompress(Path(test_dir, "my.css.gz").read_bytes()
                            ) == b"blabla"
+
+
+def test_find_orphans_main(capsys):
+    test_dir = Path(tempfile.mkdtemp())
+    Path(test_dir, "index.html.gz").write_bytes(gzip.compress(b"bla"))
+    Path(test_dir, "my.css").write_bytes(b"blabla")
+    Path(test_dir, "my.css.gz").write_bytes(gzip.compress(b"bla"))
+    Path(test_dir, "sub_dir").mkdir()
+    Path(test_dir, "sub_dir", "orphaned.html.gz"
+         ).write_bytes(gzip.compress(b"No parent"))
+    sys.argv = ["", str(test_dir)]
+    find_orphans_main()
+    result = capsys.readouterr()
+    assert str(Path(test_dir, "index.html.gz")) in result.out
+    assert str(Path(test_dir, "sub_dir", "orphaned.html.gz")) in result.out
