@@ -56,7 +56,9 @@ setup(
         "full": ["zopfli", "xxhash>=2.0.0", "isal"]
     },
     entry_points={
-        'console_scripts': ['gzip-static=gzip_static:main']
+        'console_scripts': ['gzip-static=gzip_static:main',
+                            'gzip-static-find-orphans='
+                            'gzip_static:find_orphans_main']
     }
 
 )

@@ -180,12 +180,14 @@ def test_main(capsys):
     Path(test_dir, "bla.js").write_bytes(b"bla")
     Path(test_dir, "my.css").write_bytes(b"blabla")
     Path(test_dir, "my.css.gz").write_bytes(gzip.compress(b"bla"))
-    sys.argv = ["", str(test_dir), "--debug"]
+    Path(test_dir, "orphaned.html.gz").write_bytes(gzip.compress(b"No parent"))
+    sys.argv = ["", str(test_dir), "--debug", "--remove-orphans"]
     main()
     result = capsys.readouterr()
-    assert "New gzip files:     1" in result.out
+    assert "Created gzip files: 1" in result.out
     assert "Updated gzip files: 1" in result.out
     assert "Skipped gzip files: 1" in result.out
+    assert "Deleted gzip files: 1" in result.out
     assert Path(test_dir, "bla.js.gz").exists()
     assert gzip.decompress(Path(test_dir, "my.css.gz").read_bytes()
                            ) == b"blabla"

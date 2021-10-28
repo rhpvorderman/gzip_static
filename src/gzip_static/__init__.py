@@ -41,6 +41,7 @@ DEFAULT_COMPRESSION_LEVEL = 9
 COMPRESSED = 0
 RECOMPRESSED = 1
 SKIPPED = 2
+DELETED = 3
 
 DEFAULT_EXTENSIONS_FILE = Path(__file__).parent / "extensions.txt"
 
@@ -197,6 +198,19 @@ def find_static_files(dir: Filepath,
         # TODO: Check if special behaviour is needed for symbolic links
 
 
+def find_orphaned_files(dir: Filepath, extensions: Set[str]
+                        ) -> Generator[str, None, None]:
+    for dir_entry in os.scandir(dir):  # type: os.DirEntry
+        if dir_entry.is_file():
+            if dir_entry.name.endswith(".gz"):
+                parent_file = dir_entry.path[:-3]
+                if get_extension(parent_file) in extensions:
+                    if not os.path.exists(parent_file):
+                        yield dir_entry.path
+        elif dir_entry.is_dir():
+            yield from find_orphaned_files(dir_entry.path, extensions)
+
+
 def read_extensions_file(filepath: Filepath) -> Set[str]:
     with open(filepath, "rt") as input_h:
         return {line.strip() for line in input_h}
@@ -206,20 +220,37 @@ def gzip_static(dir: Filepath,
                 extensions_file: Filepath = DEFAULT_EXTENSIONS_FILE,
                 compresslevel: int = DEFAULT_COMPRESSION_LEVEL,
                 hash_algorithm=DEFAULT_HASH_ALGORITHM,
-                force: bool = False) -> Tuple[int, int, int]:
-    results = [0, 0, 0]
+                force: bool = False,
+                remove_orphans: bool = False) -> Tuple[int, int, int, int]:
+    results = [0, 0, 0, 0]
     extensions = read_extensions_file(extensions_file)
     for static_file in find_static_files(dir, extensions):
         result = compress_file_if_changed(static_file, compresslevel,
                                           hash_algorithm, force)
         results[result] += 1
-    return tuple(results)  # type: ignore  # 3 values are guaranteed
+    if remove_orphans:
+        for orphaned_file in find_orphaned_files(dir, extensions):
+            logging.warning(
+                f"Found orphaned file: {orphaned_file}. Deleting...")
+            os.remove(orphaned_file)
+            results[DELETED] += 1
+    return tuple(results)  # type: ignore  # 4 values are guaranteed
 
 
-def argument_parser() -> argparse.ArgumentParser:
+def common_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument("directory", type=str,
                         help="The directory containing the static site")
+    parser.add_argument("-e", "--extensions-file", type=str,
+                        default=DEFAULT_EXTENSIONS_FILE,
+                        help="A file with extensions to consider when "
+                             "compressing. Use one line per extension. "
+                             "Check the default for an example.")
+    return parser
+
+
+def argument_parser() -> argparse.ArgumentParser:
+    parser = common_parser()
     complevel = parser.add_mutually_exclusive_group()
     complevel.add_argument("-l", "--compression-level",
                            choices=AVAILABLE_COMPRESSION_LEVELS,
@@ -233,18 +264,26 @@ def argument_parser() -> argparse.ArgumentParser:
                            dest="compression_level",
                            help="Use zopfli for the compression. Alias for "
                                 "-l 11 or --compression-level 11.")
-    parser.add_argument("-e", "--extensions-file", type=str,
-                        default=DEFAULT_EXTENSIONS_FILE,
-                        help="A file with extensions to consider when "
-                             "compressing. Use one line per extension. "
-                             "Check the default for an example.")
     parser.add_argument("-f", "--force", action="store_true",
                         help="Force recompression of all earlier compressed "
                              "files.")
+    parser.add_argument("--remove-orphans", action="store_true",
+                        help="Remove gzip files for which the parent file is "
+                             "missing and for which the extension is in the "
+                             "extensions file. For example: page3.html.gz "
+                             "present but no page3.html is present. "
+                             "In that case page3.html.gz will be removed.")
     parser.add_argument("-d", "--debug", action="store_true",
                         help="Print debug information to stderr.")
 
     return parser
+
+
+def find_orphans_main():
+    args = common_parser().parse_args()
+    for file in find_orphaned_files(
+            args.directory, read_extensions_file(args.extensions_file)):
+        print(file)
 
 
 def main():
@@ -254,7 +293,9 @@ def main():
     results = gzip_static(args.directory,
                           extensions_file=args.extensions_file,
                           compresslevel=args.compression_level,
-                          force=args.force)
-    print(f"New gzip files:     {results[COMPRESSED]}")
+                          force=args.force,
+                          remove_orphans=args.remove_orphans)
+    print(f"Created gzip files: {results[COMPRESSED]}")
     print(f"Updated gzip files: {results[RECOMPRESSED]}")
     print(f"Skipped gzip files: {results[SKIPPED]}")
+    print(f"Deleted gzip files: {results[DELETED]}")
