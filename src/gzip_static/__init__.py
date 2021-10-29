@@ -26,7 +26,7 @@ import os
 import warnings
 import zlib
 from pathlib import Path
-from typing import Generator, Set, Tuple, Union
+from typing import Container, Generator, Set, Tuple, Union
 
 # Accepted by open functions
 Filepath = Union[str, os.PathLike]
@@ -44,20 +44,8 @@ SKIPPED = 2
 DELETED = 3
 
 DEFAULT_EXTENSIONS_FILE = Path(__file__).parent / "extensions.txt"
-
-
-def read_extensions_file(filepath: Filepath) -> Set[str]:
-    """
-    Read a file where there is an extension on each line
-
-    :param filepath: The extensions file
-    :return: a set of extensions.
-    """
-    with open(filepath, "rt") as input_h:
-        return {line.strip() for line in input_h}
-
-
-DEFAULT_EXTENSIONS = read_extensions_file(DEFAULT_EXTENSIONS_FILE)
+DEFAULT_EXTENSIONS = frozenset(
+    DEFAULT_EXTENSIONS_FILE.read_text("UTF-8").strip().split("\n"))
 
 # Limit CLI compresslevels to 6 and 9 to keep CLI clean.
 AVAILABLE_COMPRESSION_LEVELS = [6, 9]
@@ -227,7 +215,7 @@ def get_extension(filename: str):
 
 
 def find_static_files(dir: Filepath,
-                      extensions: Set[str] = DEFAULT_EXTENSIONS,
+                      extensions: Container[str] = DEFAULT_EXTENSIONS,
                       ) -> Generator[str, None, None]:
     """
     Scan a directory recursively for files that have an extension in the set
@@ -255,7 +243,7 @@ def find_static_files(dir: Filepath,
 
 
 def find_orphaned_files(dir: Filepath,
-                        extensions: Set[str] = DEFAULT_EXTENSIONS
+                        extensions: Container[str] = DEFAULT_EXTENSIONS
                         ) -> Generator[str, None, None]:
     """
     Scan a directory recursively for '.gz' files that do not have a parent file
@@ -280,8 +268,19 @@ def find_orphaned_files(dir: Filepath,
             yield from find_orphaned_files(dir_entry.path, extensions)
 
 
+def read_extensions_file(filepath: Filepath) -> Set[str]:
+    """
+    Read a file where there is an extension on each line
+
+    :param filepath: The extensions file
+    :return: a set of extensions.
+    """
+    with open(filepath, "rt") as input_h:
+        return {line.strip() for line in input_h}
+
+
 def gzip_static(dir: Filepath,
-                extensions: Set[str] = DEFAULT_EXTENSIONS,
+                extensions: Container[str] = DEFAULT_EXTENSIONS,
                 compresslevel: int = DEFAULT_COMPRESSION_LEVEL,
                 hash_algorithm=DEFAULT_HASH_ALGORITHM,
                 force: bool = False,
