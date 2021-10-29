@@ -285,6 +285,22 @@ def gzip_static(dir: Filepath,
                 hash_algorithm=DEFAULT_HASH_ALGORITHM,
                 force: bool = False,
                 remove_orphans: bool = False) -> Tuple[int, int, int, int]:
+    """
+    Gzip all static files in a directory and its subdirectories in an
+    idempotent manner.
+
+    :param dir: The directory to recurse through.
+    :param extensions: Extensions which are static files.
+    :param compresslevel: The compression level that is used when compressing.
+    :param hash_algorithm: The hash algorithm is used when checking file
+                           contents.
+    :param force: Recompress all files regardless if content has changed or
+                  not.
+    :param remove_orphans: Remove '.gz' files where the parent static file is
+                           no longer present.
+    :return: A tuple with 4 entries. The number of compressed, recompressed,
+             skipped and deleted gzip files.
+    """
     results = [0, 0, 0, 0]
     for static_file in find_static_files(dir, extensions):
         result = compress_file_if_changed(static_file, compresslevel,
@@ -305,9 +321,10 @@ def common_parser() -> argparse.ArgumentParser:
                         help="The directory containing the static site")
     parser.add_argument("-e", "--extensions-file", type=str,
                         default=DEFAULT_EXTENSIONS_FILE,
-                        help="A file with extensions to consider when "
-                             "compressing. Use one line per extension. "
-                             "Check the default for an example.")
+                        help=f"A file with extensions to consider when "
+                             f"compressing. Use one line per extension. "
+                             f"Check the default for an example. DEFAULT: "
+                             f"{DEFAULT_EXTENSIONS_FILE}")
     return parser
 
 
