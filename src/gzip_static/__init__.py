@@ -23,10 +23,11 @@ import hashlib
 import io
 import logging
 import os
+import typing
 import warnings
 import zlib
 from pathlib import Path
-from typing import Container, Generator, Set, Tuple, Union
+from typing import Container, Generator, Set, Union
 
 # Accepted by open functions
 Filepath = Union[str, os.PathLike]
@@ -76,6 +77,16 @@ except AttributeError:
     warnings.warn(f"This xxhash version ({xxhash.VERSION}) does not have "
                   f"xxh3_128. Please update to version 2.0.0 or higher to "
                   f"make use of this hash.")
+
+
+class GzipStaticResult(typing.NamedTuple):
+    """
+    A class containing the results for the gzip_static function.
+    """
+    created: int
+    updated: int
+    skipped: int
+    deleted: int
 
 
 def hash_file_contents(filepath: Filepath,
@@ -161,16 +172,13 @@ def compress_path(filepath: Filepath,
                 output_h.write(block)  # type: ignore
 
 
-def compress_file_if_changed(filepath: Filepath,
-                             compresslevel=DEFAULT_COMPRESSION_LEVEL,
-                             hash_algorithm=DEFAULT_HASH_ALGORITHM,
-                             force: bool = False) -> int:
+def compress_idempotent(filepath: Filepath,
+                        compresslevel=DEFAULT_COMPRESSION_LEVEL,
+                        hash_algorithm=DEFAULT_HASH_ALGORITHM,
+                        force: bool = False) -> int:
     """
-    Check if the contents of the file match with the contents of its companion
-    '.gz' file and take appropriate action.
-
-    No '.gz' present -> create one. Content mismatch -> overwrite '.gz' file.
-    Content matches -> do nothing.
+    Only compress the file if no companion .gz is present that contains the
+    correct contents.
 
     :param filepath: The path to the file.
     :param compresslevel: The compression level. Use 11 for zopfli.
@@ -284,7 +292,7 @@ def gzip_static(dir: Filepath,
                 compresslevel: int = DEFAULT_COMPRESSION_LEVEL,
                 hash_algorithm=DEFAULT_HASH_ALGORITHM,
                 force: bool = False,
-                remove_orphans: bool = False) -> Tuple[int, int, int, int]:
+                remove_orphans: bool = False) -> GzipStaticResult:
     """
     Gzip all static files in a directory and its subdirectories in an
     idempotent manner.
@@ -303,8 +311,8 @@ def gzip_static(dir: Filepath,
     """
     results = [0, 0, 0, 0]
     for static_file in find_static_files(dir, extensions):
-        result = compress_file_if_changed(static_file, compresslevel,
-                                          hash_algorithm, force)
+        result = compress_idempotent(static_file, compresslevel,
+                                     hash_algorithm, force)
         results[result] += 1
     if remove_orphans:
         for orphaned_file in find_orphaned_files(dir, extensions):
@@ -312,7 +320,7 @@ def gzip_static(dir: Filepath,
                 f"Found orphaned file: {orphaned_file}. Deleting...")
             os.remove(orphaned_file)
             results[DELETED] += 1
-    return tuple(results)  # type: ignore  # 4 values are guaranteed
+    return GzipStaticResult(*results)
 
 
 def common_parser() -> argparse.ArgumentParser:
@@ -375,7 +383,7 @@ def main():
                           compresslevel=args.compression_level,
                           force=args.force,
                           remove_orphans=args.remove_orphans)
-    print(f"Created gzip files: {results[COMPRESSED]}")
-    print(f"Updated gzip files: {results[RECOMPRESSED]}")
-    print(f"Skipped gzip files: {results[SKIPPED]}")
-    print(f"Deleted gzip files: {results[DELETED]}")
+    print(f"Created gzip files: {results.created}")
+    print(f"Updated gzip files: {results.updated}")
+    print(f"Skipped gzip files: {results.skipped}")
+    print(f"Deleted gzip files: {results.deleted}")
