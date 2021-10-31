@@ -3,6 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+=======================================
 Welcome to gzip_static's documentation!
 =======================================
 
@@ -10,17 +11,27 @@ Welcome to gzip_static's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+==============================
+gzip-static usage
+==============================
 
+.. argparse::
+  :module: gzip_static
+  :func: argument_parser
+  :prog: gzip-static
 
-Indices and tables
-==================
+===============================
+gzip-static-find-orphans usage
+===============================
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+.. argparse::
+   :module: gzip_static
+   :func: common_parser
+   :prog: gzip-static-find-orphans
 
-API Documentation
-=================
+==============================
+API Documentation: gzip_static
+==============================
 
 .. automodule:: gzip_static
    :members:
