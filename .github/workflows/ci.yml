@@ -30,7 +30,7 @@ jobs:
     strategy:
       matrix:
         tox_env:
-          #- docs
+          - docs
           - twine_check
     needs: lint
     runs-on: ubuntu-20.04

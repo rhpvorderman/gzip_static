@@ -23,7 +23,7 @@ import tempfile
 from pathlib import Path
 
 from gzip_static import COMPRESSED, DEFAULT_EXTENSIONS_FILE, \
-    DEFAULT_HASH_ALGORITHM, RECOMPRESSED, SKIPPED, compress_file_if_changed, \
+    DEFAULT_HASH_ALGORITHM, RECOMPRESSED, SKIPPED, compress_idempotent, \
     compress_path, find_orphans_main, find_static_files, get_extension, \
     gzip_static, hash_file_contents, main, read_extensions_file
 
@@ -103,40 +103,40 @@ def test_read_extensions_file():
     test.unlink()
 
 
-def test_compress_file_if_changed_no_change():
+def test_compress_idempotent_no_change():
     test_dir = Path(tempfile.mkdtemp())
     test_file = test_dir / "test"
     test_gz = test_dir / "test.gz"
     test_file.write_bytes(DATA)
     test_gz.write_bytes(gzip.compress(DATA))
-    assert compress_file_if_changed(test_file) == SKIPPED
+    assert compress_idempotent(test_file) == SKIPPED
 
 
-def test_compress_file_if_changed_force():
+def test_compress_idempotent_force():
     test_dir = Path(tempfile.mkdtemp())
     test_file = test_dir / "test"
     test_gz = test_dir / "test.gz"
     test_file.write_bytes(DATA)
     test_gz.write_bytes(gzip.compress(DATA))
-    assert compress_file_if_changed(test_file, force=True) == RECOMPRESSED
+    assert compress_idempotent(test_file, force=True) == RECOMPRESSED
 
 
-def test_compress_file_if_changed_changed():
+def test_compress_idempotent_changed():
     test_dir = Path(tempfile.mkdtemp())
     test_file = test_dir / "test"
     test_gz = test_dir / "test.gz"
     test_file.write_bytes(DATA + b" Some changes were made.")
     test_gz.write_bytes(gzip.compress(DATA))
-    assert compress_file_if_changed(test_file) == RECOMPRESSED
+    assert compress_idempotent(test_file) == RECOMPRESSED
 
 
-def test_compress_file_if_changed_no_companion_gz():
+def test_compress_idempotent_no_companion_gz():
     test_dir = Path(tempfile.mkdtemp())
     test_file = test_dir / "test"
     test_gz = test_dir / "test.gz"
     test_file.write_bytes(DATA)
     assert not test_gz.exists()
-    assert compress_file_if_changed(test_file) == COMPRESSED
+    assert compress_idempotent(test_file) == COMPRESSED
     assert test_gz.exists()
 
 

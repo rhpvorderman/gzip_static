@@ -23,10 +23,11 @@ import hashlib
 import io
 import logging
 import os
+import typing
 import warnings
 import zlib
 from pathlib import Path
-from typing import Generator, Set, Tuple, Union
+from typing import Container, Generator, Set, Union
 
 # Accepted by open functions
 Filepath = Union[str, os.PathLike]
@@ -44,6 +45,8 @@ SKIPPED = 2
 DELETED = 3
 
 DEFAULT_EXTENSIONS_FILE = Path(__file__).parent / "extensions.txt"
+DEFAULT_EXTENSIONS = frozenset(
+    DEFAULT_EXTENSIONS_FILE.read_text("UTF-8").strip().split("\n"))
 
 # Limit CLI compresslevels to 6 and 9 to keep CLI clean.
 AVAILABLE_COMPRESSION_LEVELS = [6, 9]
@@ -76,9 +79,29 @@ except AttributeError:
                   f"make use of this hash.")
 
 
+class GzipStaticResult(typing.NamedTuple):
+    """
+    A class containing the results for the gzip_static function.
+    """
+    created: int
+    updated: int
+    skipped: int
+    deleted: int
+
+
 def hash_file_contents(filepath: Filepath,
                        hash_algorithm=DEFAULT_HASH_ALGORITHM,
-                       block_size: int = DEFAULT_BLOCK_SIZE):
+                       block_size: int = DEFAULT_BLOCK_SIZE) -> bytes:
+    """
+    Read contents from a file and return the hash.
+
+    :param filepath: The path to the file. Paths ending in '.gz' will be
+                     automatically decompressed.
+    :param hash_algorithm: The hash algorithm to use. Must be
+                           hashlib-compatible.
+    :param block_size: The size of the chunks read from the file at once.
+    :return: A digest of the hash.
+    """
     is_gzip = os.fspath(filepath).endswith(".gz")
     if is_gzip:
         # Using a zlib decompressor has much less overhead than using GzipFile.
@@ -112,7 +135,17 @@ def hash_file_contents(filepath: Filepath,
 
 def compress_path(filepath: Filepath,
                   compresslevel: int = DEFAULT_COMPRESSION_LEVEL,
-                  block_size: int = DEFAULT_BLOCK_SIZE):
+                  block_size: int = DEFAULT_BLOCK_SIZE) -> None:
+    """
+    Compress a file's contents and write them to a '.gz' file.
+
+    Similar to gzip -k <filepath>
+
+    :param filepath: The path to the file
+    :param compresslevel: The gzip compression level to use. Use 11 for zopfli
+                          compression.
+    :param block_size: The size of the chunks read from the file at once.
+    """
     output_filepath = os.fspath(filepath) + ".gz"
     if compresslevel == 11:
         if zopfli_gzip is None:
@@ -139,10 +172,21 @@ def compress_path(filepath: Filepath,
                 output_h.write(block)  # type: ignore
 
 
-def compress_file_if_changed(filepath: Filepath,
-                             compresslevel=DEFAULT_COMPRESSION_LEVEL,
-                             hash_algorithm=DEFAULT_HASH_ALGORITHM,
-                             force: bool = False) -> int:
+def compress_idempotent(filepath: Filepath,
+                        compresslevel=DEFAULT_COMPRESSION_LEVEL,
+                        hash_algorithm=DEFAULT_HASH_ALGORITHM,
+                        force: bool = False) -> int:
+    """
+    Only compress the file if no companion .gz is present that contains the
+    correct contents.
+
+    :param filepath: The path to the file.
+    :param compresslevel: The compression level. Use 11 for zopfli.
+    :param hash_algorithm: The hash_algorithm to check the contents with.
+    :param force: Always create a new '.gz' file to overwrite the old one.
+    :return: An integer that stands for the action taken. Matches with
+             the COMPRESSED, RECOMPRESSED and SKIPPED constants in this module.
+    """
     result = COMPRESSED
     gzipped_path = os.fspath(filepath) + ".gz"
     if os.path.exists(gzipped_path):
@@ -179,8 +223,16 @@ def get_extension(filename: str):
 
 
 def find_static_files(dir: Filepath,
-                      extensions: Set[str],
+                      extensions: Container[str] = DEFAULT_EXTENSIONS,
                       ) -> Generator[str, None, None]:
+    """
+    Scan a directory recursively for files that have an extension in the set
+    of extensions.
+
+    :param dir: The directory to scan.
+    :param extensions: A set of extensions to scan for.
+    :return: A generator of filepaths that match the extensions.
+    """
     for dir_entry in os.scandir(dir):  # type: os.DirEntry
         if dir_entry.is_file():
             # Cheap check to skip all the .gz files quickly. This is 4x faster
@@ -198,8 +250,21 @@ def find_static_files(dir: Filepath,
         # TODO: Check if special behaviour is needed for symbolic links
 
 
-def find_orphaned_files(dir: Filepath, extensions: Set[str]
+def find_orphaned_files(dir: Filepath,
+                        extensions: Container[str] = DEFAULT_EXTENSIONS
                         ) -> Generator[str, None, None]:
+    """
+    Scan a directory recursively for '.gz' files that do not have a parent file
+    with an extension in extensions.
+
+    For example ``find_orphaned_files(my_dir, set(".html"))`` will find
+    ``index.html.gz`` if ``index.html`` is not present. It will not find
+    ``myhostedarchive.tar.gz`` as ``.tar`` is not in the set of extensions.
+
+    :param dir: The directory to scan.
+    :param extensions: Extensions of parents file to include.
+    :return: A generator of filepaths of orphaned '.gz' files.
+    """
     for dir_entry in os.scandir(dir):  # type: os.DirEntry
         if dir_entry.is_file():
             if dir_entry.name.endswith(".gz"):
@@ -212,21 +277,42 @@ def find_orphaned_files(dir: Filepath, extensions: Set[str]
 
 
 def read_extensions_file(filepath: Filepath) -> Set[str]:
+    """
+    Read a file where there is an extension on each line
+
+    :param filepath: The extensions file
+    :return: a set of extensions.
+    """
     with open(filepath, "rt") as input_h:
         return {line.strip() for line in input_h}
 
 
 def gzip_static(dir: Filepath,
-                extensions_file: Filepath = DEFAULT_EXTENSIONS_FILE,
+                extensions: Container[str] = DEFAULT_EXTENSIONS,
                 compresslevel: int = DEFAULT_COMPRESSION_LEVEL,
                 hash_algorithm=DEFAULT_HASH_ALGORITHM,
                 force: bool = False,
-                remove_orphans: bool = False) -> Tuple[int, int, int, int]:
+                remove_orphans: bool = False) -> GzipStaticResult:
+    """
+    Gzip all static files in a directory and its subdirectories in an
+    idempotent manner.
+
+    :param dir: The directory to recurse through.
+    :param extensions: Extensions which are static files.
+    :param compresslevel: The compression level that is used when compressing.
+    :param hash_algorithm: The hash algorithm is used when checking file
+                           contents.
+    :param force: Recompress all files regardless if content has changed or
+                  not.
+    :param remove_orphans: Remove '.gz' files where the parent static file is
+                           no longer present.
+    :return: A tuple with 4 entries. The number of compressed, recompressed,
+             skipped and deleted gzip files.
+    """
     results = [0, 0, 0, 0]
-    extensions = read_extensions_file(extensions_file)
     for static_file in find_static_files(dir, extensions):
-        result = compress_file_if_changed(static_file, compresslevel,
-                                          hash_algorithm, force)
+        result = compress_idempotent(static_file, compresslevel,
+                                     hash_algorithm, force)
         results[result] += 1
     if remove_orphans:
         for orphaned_file in find_orphaned_files(dir, extensions):
@@ -234,7 +320,7 @@ def gzip_static(dir: Filepath,
                 f"Found orphaned file: {orphaned_file}. Deleting...")
             os.remove(orphaned_file)
             results[DELETED] += 1
-    return tuple(results)  # type: ignore  # 4 values are guaranteed
+    return GzipStaticResult(*results)
 
 
 def common_parser() -> argparse.ArgumentParser:
@@ -243,9 +329,10 @@ def common_parser() -> argparse.ArgumentParser:
                         help="The directory containing the static site")
     parser.add_argument("-e", "--extensions-file", type=str,
                         default=DEFAULT_EXTENSIONS_FILE,
-                        help="A file with extensions to consider when "
-                             "compressing. Use one line per extension. "
-                             "Check the default for an example.")
+                        help=f"A file with extensions to consider when "
+                             f"compressing. Use one line per extension. "
+                             f"Check the default for an example. DEFAULT: "
+                             f"{DEFAULT_EXTENSIONS_FILE}")
     return parser
 
 
@@ -290,12 +377,13 @@ def main():
     args = argument_parser().parse_args()
     if args.debug:
         logging.basicConfig(level=logging.DEBUG)
+    extensions = read_extensions_file(args.extensions_file)
     results = gzip_static(args.directory,
-                          extensions_file=args.extensions_file,
+                          extensions=extensions,
                           compresslevel=args.compression_level,
                           force=args.force,
                           remove_orphans=args.remove_orphans)
-    print(f"Created gzip files: {results[COMPRESSED]}")
-    print(f"Updated gzip files: {results[RECOMPRESSED]}")
-    print(f"Skipped gzip files: {results[SKIPPED]}")
-    print(f"Deleted gzip files: {results[DELETED]}")
+    print(f"Created gzip files: {results.created}")
+    print(f"Updated gzip files: {results.updated}")
+    print(f"Skipped gzip files: {results.skipped}")
+    print(f"Deleted gzip files: {results.deleted}")
