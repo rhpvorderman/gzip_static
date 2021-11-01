@@ -35,3 +35,5 @@ API Documentation: gzip_static
 
 .. automodule:: gzip_static
    :members:
+
+.. include:: technical_considerations.rst
