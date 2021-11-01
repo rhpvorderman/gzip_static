@@ -180,6 +180,9 @@ def compress_idempotent(filepath: Filepath,
     Only compress the file if no companion .gz is present that contains the
     correct contents.
 
+    This function ensures the mode, atime and mtime of the gzip file are
+    inherited from the file to be compressed.
+
     :param filepath: The path to the file.
     :param compresslevel: The compression level. Use 11 for zopfli.
     :param hash_algorithm: The hash_algorithm to check the contents with.
@@ -205,6 +208,11 @@ def compress_idempotent(filepath: Filepath,
     logging.debug(f"Compressing {filepath} with compression level "
                   f"{compresslevel}")
     compress_path(filepath, compresslevel)
+
+    # Set filesystem attributes for the gzipped file.
+    file_stat = os.stat(filepath)
+    os.utime(gzipped_path, ns=(file_stat.st_atime_ns, file_stat.st_mtime_ns))
+    os.chmod(gzipped_path, file_stat.st_mode)
     return result
 
 
