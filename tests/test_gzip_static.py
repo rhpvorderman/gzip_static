@@ -198,6 +198,10 @@ def test_main(capsys):
     assert Path(test_dir, "bla.js.gz").exists()
     assert gzip.decompress(Path(test_dir, "my.css.gz").read_bytes()
                            ) == b"blabla"
+    assert f"{test_dir} was updated" in result.out
+    main()
+    again_result = capsys.readouterr()
+    assert f"{test_dir} had no changes" in again_result.out
 
 
 def test_find_orphans_main(capsys):

@@ -391,6 +391,11 @@ def main():
                           compresslevel=args.compression_level,
                           force=args.force,
                           remove_orphans=args.remove_orphans)
+    changes = bool(results.created + results.updated + results.deleted)
+    if changes:
+        print(f"{args.directory} was updated")
+    else:
+        print(f"{args.directory} had no changes")
     print(f"Created gzip files: {results.created}")
     print(f"Updated gzip files: {results.updated}")
     print(f"Skipped gzip files: {results.skipped}")
