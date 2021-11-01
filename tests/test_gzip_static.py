@@ -18,6 +18,7 @@
 import gzip
 import os
 import shutil
+import stat
 import sys
 import tempfile
 from pathlib import Path
@@ -135,9 +136,15 @@ def test_compress_idempotent_no_companion_gz():
     test_file = test_dir / "test"
     test_gz = test_dir / "test.gz"
     test_file.write_bytes(DATA)
+    test_file.chmod(stat.S_IRUSR | stat.S_IWUSR)
+    os.utime(test_file, (0, 0))
     assert not test_gz.exists()
     assert compress_idempotent(test_file) == COMPRESSED
     assert test_gz.exists()
+    test_stat = test_file.stat()
+    test_gz_stat = test_gz.stat()
+    assert test_stat.st_mtime == test_gz_stat.st_mtime
+    assert test_stat.st_mode == test_gz_stat.st_mode
 
 
 def test_find_static_files():
