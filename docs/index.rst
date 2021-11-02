@@ -11,8 +11,12 @@ Welcome to gzip_static's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   installation
-   usage
-   api_documentation
-   technical_considerations
-   CHANGELOG
+.. include:: installation.rst
+
+.. include:: usage.rst
+
+.. include:: api_documentation.rst
+
+.. include:: technical_considerations.rst
+
+.. include:: CHANGELOG.rst
