@@ -47,9 +47,5 @@ of Debian (bullseye) `had 11294 new packages
 <https://www.debian.org/News/2021/20210814>`_ but ngx_brotli is nowhere on the
 horizon.
 
-This leads me to conclude that installing ngx_brotli is **hard**, and keeping
-it up to date with the latest security patches will fall upon me as I maintain
-a self-compiled module. No thanks!
-
 Once a properly working ngx_brotli module is packaged in Debian, I am happy
 to add brotli support!
