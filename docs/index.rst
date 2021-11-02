@@ -15,3 +15,4 @@ Welcome to gzip_static's documentation!
    usage
    api_documentation
    technical_considerations
+   CHANGELOG
