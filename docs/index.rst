@@ -11,27 +11,12 @@ Welcome to gzip_static's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-==============================
-gzip-static usage
-==============================
+.. include:: installation.rst
 
-.. argparse::
-  :module: gzip_static
-  :func: argument_parser
-  :prog: gzip-static
+.. include:: usage.rst
 
-===============================
-gzip-static-find-orphans usage
-===============================
+.. include:: api_documentation.rst
 
-.. argparse::
-   :module: gzip_static
-   :func: common_parser
-   :prog: gzip-static-find-orphans
+.. include:: technical_considerations.rst
 
-==============================
-API Documentation: gzip_static
-==============================
-
-.. automodule:: gzip_static
-   :members:
+.. include:: CHANGELOG.rst
