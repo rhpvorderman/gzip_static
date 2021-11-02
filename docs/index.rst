@@ -11,6 +11,7 @@ Welcome to gzip_static's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   installation
    usage
    api_documentation
    technical_considerations
