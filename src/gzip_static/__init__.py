@@ -48,12 +48,11 @@ DEFAULT_EXTENSIONS_FILE = Path(__file__).parent / "extensions.txt"
 DEFAULT_EXTENSIONS = frozenset(
     DEFAULT_EXTENSIONS_FILE.read_text("UTF-8").strip().split("\n"))
 
-# Limit CLI compresslevels to 6 and 9 to keep CLI clean.
-AVAILABLE_COMPRESSION_LEVELS = [6, 9]
+# Limit CLI compresslevels to 6, 9 and 11 to keep CLI clean.
+AVAILABLE_COMPRESSION_LEVELS = [6, 9, 11]
 
 try:
     from zopfli import gzip as zopfli_gzip  # type: ignore
-    AVAILABLE_COMPRESSION_LEVELS.append(11)
 except ImportError:
     zopfli_gzip = None
 
