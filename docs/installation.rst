@@ -29,6 +29,6 @@ so it is about 2.5 times faster.
 These dependencies are all optional and can be installed separately in the
 environment or with the optional dependency commands:
 
-+ `pip install gzip_static[zopfli]` installs gzip_static and zopfli.
-+ `pip install gzip_static[performance]` installs gzip_static, xxhash and isal.
-+ `pip install gzip_static[full]` installs gzip_static, zopfli, xxhash and isal.
++ ``pip install gzip_static[zopfli]`` installs gzip_static and zopfli.
++ ``pip install gzip_static[performance]`` installs gzip_static, xxhash and isal.
++ ``pip install gzip_static[full]`` installs gzip_static, zopfli, xxhash and isal.
