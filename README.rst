@@ -22,9 +22,10 @@ gzip_static
 ===========
 
 Compress your static website or website's static assets with gzip for faster
-serving with nginx's gzip_static on.
+serving with `nginx <https://nginx.org>`_'s `gzip_static
+<https://nginx.org/en/docs/http/ngx_http_gzip_static_module.html>`_ module.
 
-nginx does not perform checks on the served gzip to determine if it is out of
+Nginx does not perform checks on the served gzip to determine if it is out of
 date. This program was created to automate the checks and compression of the
 static files at the website's build time.
 
@@ -37,9 +38,11 @@ Features:
   files that have not been compressed yet or are changed. Can therefore be used with
   configuration management systems such as `Ansible <https://www.ansible.com/>`_.
 + Guards against serving outdated gzips
-    + Content is checked with a checksum to verify that a file has changed.
-    + Has a ``--remove-orphans`` option to remove gzips for which the source
-      static file is no longer available.
+
+  + Gzip content is checked with a checksum to verify that a file has changed.
+  + Has a ``--remove-orphans`` option to remove gzips for which the source
+    static file is no longer available.
+
 + The created gzip files inherited filesystem attributes from the source static
   files such as the mode and the last modified time.
 + Works on any machine with Python 3.6 or higher installed. It does not depend
