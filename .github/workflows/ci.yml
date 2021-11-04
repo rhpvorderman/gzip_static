@@ -86,8 +86,6 @@ jobs:
         uses: actions/setup-python@v2
       - name: Install build
         run: pip install build
-      - name: Build wheels
-        run: cibuildwheel --output-dir dist
       - name: Build packages
         run: python -m build
       - uses: actions/upload-artifact@v2
