@@ -50,7 +50,7 @@ All these layers solve two problems:
 
 This functionality creates a lot of overhead. Using Python's ``zlib.decompress``
 with ``wbits=31`` solves this problem as it can compress an in-memory block
-in its entirity. It cannot read multiple members but since these gzip files
+in its entirety. It cannot read multiple members but since these gzip files
 are compressed by gzip_static itself we know they only contain one member.
 
 However this presents another problem: files have to be read in memory entirely.
