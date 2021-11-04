@@ -46,9 +46,26 @@ Features:
   on other packages for its core functionally.
 + Zopfli compression is supported when `zopfli <https://pypi.org/project/zopfli>`_
   is installed.
++ Can be used as a library in other projects and has a `fully documented API
+  <https://gzip-static.readthedocs.io/en/latest/#module-gzip_static>`_.
 
 Quickstart
 ==========
 
 Install gzip_static with ``pip install gzip_static`` or ``pip install --user
-gzip_static``.
+gzip_static``. For more installation options and options to enable more
+functionally such as zopfli and better speed, checkout `the installation
+documentation <https://gzip-static.readthedocs.io/en/latest/#installation>`_.
+
++ To compress all static files in a directory:
+  ``gzip-static /var/www/my_example_website/``
++ To check if all gzip files are up to date and recompress changed ones:
+  ``gzip-static /var/www/my_example_website/`` (Same command due to idempotency)
++ To check if all gzip files are up to date, recompress changed ones and remove
+  gzip files for which a source static file is no longer present:
+  ``gzip-static --remove-orphans /var/www/my_example_website/``
++ To check for orphaned files only: ``gzip-static-find-orphans /var/www/my_example_website/``
+
+For a more extended usage and more options use ``gzip-static --help`` or
+checkout `the usage documentation
+<https://gzip-static.readthedocs.io/en/latest/#usage>`_.
