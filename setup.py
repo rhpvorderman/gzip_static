@@ -22,7 +22,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="gzip_static",
-    version="0.1.0-dev",
+    version="0.1.0",
     description="Compress your static website with gzip for faster serving "
                 "with NGiNX's gzip_static on.",
     author="Ruben Vorderman",
