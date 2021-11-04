@@ -36,9 +36,9 @@ supported by gzip_static.
 - Supporting two formats simultaneously makes the code more complex.
 - `brotli_static does not work well with gzip_static <https://github.com/google/ngx_brotli/issues/123>`_
 
-This project was made to work with NGiNX's gzip plugin to host my
+This project was made to work with nginx's gzip plugin to host my
 websites. The gzip plugin is builtin in
-even the simplest NGiNX package on Debian (``nginx-light``). Getting brotli to
+even the simplest nginx package on Debian (``nginx-light``). Getting brotli to
 work however is much more work. It needs to be compiled, but it needs to
 compiled exactly with the right instructions. Brotli has been around
 since 2013 and has tremendous advantages, but
