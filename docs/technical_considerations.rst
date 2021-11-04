@@ -25,6 +25,70 @@ algorithm available in ``hashlib.algorithms_guaranteed``.
 (This was verified on two different PC's). Therefore it was chosen as default.
 The XXH3_128 algorithm is used when XXhash is installed.
 
+Speedy hashing of small gzip files
+----------------------------------
+Speedy hashing of normal files is quite easy. Open a file, read it in blocks,
+feed each block to the hasher and get a checksum in the end. Choose a decent
+block size to speed it up slightly. (32K was used here. 128K is used by ``cat``
+so choosing more than Python's default of 8K is quite common).
+
+Speedy hashing of gzip files presents a problem. We can simply use Python's
+``gzip.open`` which returns a ``GzipFile``, but that is slow. Just like normal
+``open`` this creates an interface to read the file, but then it gets more
+complicated. This gets wrapped into a ``_PaddedFile`` object which is then
+wrapped into a ``_GzipReader`` object which is then wrapped by the ``GzipFile``.
+All these layers solve two problems:
+
+- A controlled number of bytes can be read from the compressed file. Since the
+  compression ratio can differ along the file it is impossible to grab a
+  certain number of bytes and exactly know the size of the output once
+  decompressed. ``_GzipReader.read`` has mechanisms built-in to always output
+  the desired numbers of bytes.
+- Gzip allows for multiple members (each consisting of header, compressed body and
+  trailer) to be concatenated together. After a member is decompressed the
+  remaining bytes in the file must be checked for another gzip member.
+
+This functionality creates a lot of overhead. Using Python's ``zlib.decompress``
+with ``wbits=31`` solves this problem as it can compress an in-memory block
+in its entirity. It cannot read multiple members but since these gzip files
+are compressed by gzip_static itself we know they only contain one member.
+
+However this presents another problem: files have to be read in memory entirely.
+This was solved by using a ``zlib.decompressobj`` instead and using the
+``decompress`` method on that object. This works with streaming decompression.
+It is not a problem that we do not know before which number of bytes is returned
+by the function. This is typically in the 3-6 times the input bytes range.
+At best gzip can compress at ratios of ~1000x. (Tested with all zeroes binary,
+all ones binary, and a repetition of a single character). So if the input
+block size is 8k, we can expect at most 8M bytes be read in memory. This is
+acceptable, and this way even large static files of several hundreds of MB can
+be checksummed in a streaming fashion.
+
+The great advantage of this method is that most gzip's will be smaller than 8k.
+So only one decompress call is needed. This is almost as fast as in-memory
+decompression with ``zlib.decompress`` but allowing streaming.
+
+For example on docs.python.org compressing the static files compresses 6374
+static files with a combined size of 481 MB. The resulting gzip sizes are
+as follows.
+
+- gzip 8K or below (one decompress call): 3516
+- gzip 8K - 16K (two decompress calls): 1560
+- gzip 16K -24K (three decompress calls): 565
+- gzip 24K - 32K (four decompress calls): 308
+- gzip 32k-64k (eight or less decompress calls): 356
+- gzip larger than 64k: 69
+
+In total 6305 (99%!) of the gzip files are smaller than 64K and can be
+decompressed with eight or less calls. Since the ``gzip.GzipFile`` overhead
+weighs in very heavy at these small file sizes using ``zlib.decompressobj``
+creates a notable speed improvement, reducing decompression time by about
+~30% for the docs.python.org website.
+
+The speedup can be even greater when using
+`python-isal <https://github.com/pycompression/python-isal>`_. Using its
+``isal_zlib.decompressobj`` reduces the decompression time with more than 50%.
+
 No brotli support
 -----------------
 `Brotli <https://en.wikipedia.org/wiki/Brotli>`_ is an excellent compression
