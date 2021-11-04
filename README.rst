@@ -48,6 +48,8 @@ Features:
   is installed.
 + Can be used as a library in other projects and has a `fully documented API
   <https://gzip-static.readthedocs.io/en/latest/#module-gzip_static>`_.
++ Optimized for checksumming small gzip file contents. Rerunning gzip_static on
+  an already compressed website is very quick.
 
 Quickstart
 ==========
@@ -59,7 +61,8 @@ documentation <https://gzip-static.readthedocs.io/en/latest/#installation>`_.
 
 + To compress all static files in a directory:
   ``gzip-static /var/www/my_example_website/``
-+ To check if all gzip files are up to date and recompress changed ones:
++ To check if all gzip files are up to date and recompress gzip files for which
+  the source has changed:
   ``gzip-static /var/www/my_example_website/`` (Same command due to idempotency)
 + To check if all gzip files are up to date, recompress changed ones and remove
   gzip files for which a source static file is no longer present:
