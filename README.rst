@@ -29,7 +29,8 @@ Nginx does not perform checks on the served gzip to determine if it is out of
 date. This program was created to automate the checks and compression of the
 static files at the website's build time.
 
-Features:
+Features
+========
 
 + Finds all static files in a directory and its subdirectory automatically
   based on an `extensions file <src/gzip_static/extensions.txt>`_ which can be
