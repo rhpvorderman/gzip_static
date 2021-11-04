@@ -30,7 +30,7 @@ date. This program was created to automate the checks and compression of the
 static files at the website's build time.
 
 Features
-========
+--------
 
 + Finds all static files in a directory and its subdirectory automatically
   based on an `extensions file <src/gzip_static/extensions.txt>`_ which can be
@@ -56,7 +56,7 @@ Features
   an already compressed website is very quick.
 
 Quickstart
-==========
+----------
 
 Install gzip_static with ``pip install gzip_static`` or ``pip install --user
 gzip_static``. For more installation options and options to enable more
