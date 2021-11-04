@@ -32,7 +32,7 @@ static files at the website's build time.
 Features
 --------
 
-+ Finds all static files in a directory and its subdirectory automatically
++ Finds all static files in a directory and its subdirectories automatically
   based on an `extensions file <src/gzip_static/extensions.txt>`_ which can be
   customized.
 + `Idempotent <https://en.wikipedia.org/wiki/Idempotence>`_. Only compresses
