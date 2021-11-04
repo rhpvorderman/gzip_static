@@ -1,3 +1,23 @@
+.. image:: https://img.shields.io/pypi/v/gzip_static.svg
+  :target: https://pypi.org/project/gzip_static/
+  :alt:
+
+.. image:: https://img.shields.io/pypi/pyversions/gzip_static.svg
+  :target: https://pypi.org/project/gzip_static/
+  :alt:
+
+.. image:: https://img.shields.io/pypi/l/gzip_static.svg
+  :target: https://github.com/LUMC/isal/blob/main/LICENSE
+  :alt:
+
+.. image:: https://codecov.io/gh/rhpvorderman/gzip_static/branch/main/graph/badge.svg?token=NFFZIBF1ZA
+  :target: https://codecov.io/gh/rhpvorderman/gzip_static
+
+.. image:: https://readthedocs.org/projects/gzip_static/badge
+   :target: https://gzip_static.readthedocs.io
+   :alt:
+
+
 gzip_static
 ===========
 
