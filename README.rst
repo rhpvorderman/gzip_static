@@ -76,3 +76,13 @@ documentation <https://gzip-static.readthedocs.io/en/latest/#installation>`_.
 For a more extended usage and more options use ``gzip-static --help`` or
 checkout `the usage documentation
 <https://gzip-static.readthedocs.io/en/latest/#usage>`_.
+
+Contributing
+------------
+For bug reports and feature requests please use the `github issue tracker
+<https://github.com/rhpvorderman/gzip_static/issues>`_. Pull requests
+are also welcome.
+
+Please note that brotli support is currently not in this project's scope.
+This may change. For more information read
+`here <https://gzip-static.readthedocs.io/en/latest/#no-brotli-support>`_.
